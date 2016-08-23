@@ -49,7 +49,14 @@ class NFA:
 
 class Regex:
 	def __init__(self, regex):
-		pass
+		tree = build_symbol_tree(regex)
+		tree.print_tree()
+		self.M = tree_to_NFA(tree)
+
+	def test(self, input):
+		return self.M.accept(input)
+
+
 
 class Node:
 	def __init__(self, symbol):
@@ -65,8 +72,21 @@ class Node:
 			node._print_tree(depth + 1)
 
 
-def tree_to_NFA():
-	pass
+def tree_to_NFA(input):
+	if input.symbol == '+':
+		to_return = tree_to_NFA(input.children[0])
+		for i in range(1, len(input.children)):
+			to_return = concat_NFA(to_return, tree_to_NFA(input.children[i]))
+		return to_return
+	elif input.symbol == '|':
+		to_return = tree_to_NFA(input.children[0])
+		for i in range(1, len(input.children)):
+			to_return = union_NFA(to_return, tree_to_NFA(input.children[i]))
+		return to_return
+	elif input.symbol == '*':
+		return kleene_NFA(tree_to_NFA(input.children[0]))
+	else:
+		return create_string_NFA(input.symbol)
 
 
 def build_symbol_tree(input):
@@ -89,7 +109,7 @@ def _build_symbol_tree(input):
 		elif input[i] == '|':
 			if current_node != None:
 				new_node = Node('|')
-				new_node.children.append(current_node)
+				new_node.children = [current_node]
 				current_node = new_node
 			else:
 				current_node = Node('|')
@@ -97,7 +117,7 @@ def _build_symbol_tree(input):
 			if current_node != None:
 				new_node = Node('*')
 				if input[i - 1] == ')':
-					new_node.children.append(current_node)
+					new_node.children = [current_node]
 					current_node = new_node
 				else:
 					new_node.children = [current_node.children[len(current_node.children) - 1]]
@@ -105,8 +125,15 @@ def _build_symbol_tree(input):
 		else:
 			if current_node == None:
 				current_node = Node(input[i])
-			elif current_node.symbol == '+' or current_node.symbol == '|':
+			elif current_node.symbol == '+':
 				current_node.children.append(Node(input[i]))
+			elif current_node.symbol == '|':
+				if input[i - 1] == '|':
+					new_node = Node('+')
+					new_node.children.append(Node(input[i]))
+					current_node.children.append(new_node)
+				else:
+					current_node.children[len(current_node.children) - 1].children.append(Node(input[i]))
 			else:
 				new_node = Node('+')
 				new_node.children.append(current_node)
@@ -156,7 +183,14 @@ def concat_NFA(M1, M2):
 
 
 def main():
-	build_symbol_tree("(a|b|c)*dd").print_tree()
+	input_regex = raw_input("Enter a regex: ")
+	R = Regex(input_regex)
+
+	while True:
+		to_test = raw_input("Enter a string to test: ")
+		if to_test == "X":
+			break
+		print R.test(to_test)
 
 
 if __name__ == '__main__':
