@@ -120,7 +120,7 @@ def _build_symbol_tree(input, start):
 		if input[i] == '(':
 			new_node, ind = _build_symbol_tree(input, i + 1)
 
-			if i < len(input) - 1 and input[ind + 1] == '*':
+			if ind < len(input) - 1 and input[ind + 1] == '*':
 				kleene_node = Node('*')
 				kleene_node.children = [new_node]
 				new_node = kleene_node
