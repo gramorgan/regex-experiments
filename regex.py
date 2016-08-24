@@ -90,47 +90,65 @@ def tree_to_NFA(input):
 
 
 def build_symbol_tree(input):
-	node, ind = _build_symbol_tree(input)
+	node, ind = _build_symbol_tree(input, 0)
 	return node
 
-def _build_symbol_tree(input):
+def _build_symbol_tree(input, start):
 	current_node = None
-	i = 0
+	i = start
 	while i < len(input):
 		if input[i] == '(':
-			new_node, ind = _build_symbol_tree(input[(i + 1):])
-			i = ind
-			if current_node != None:
+			new_node, ind = _build_symbol_tree(input, i + 1)
+			if i < len(input) - 1 and input[ind + 1] == '*':
+				kleene_node = Node('*')
+				kleene_node.children = [new_node]
+				new_node = kleene_node
+
+			if current_node == None:
+				current_node = new_node
+			elif current_node.symbol == '+' and input[i - 1] != ')':
 				current_node.children.append(new_node)
+			elif current_node.symbol == '|' and input[i - 1] != ')':
+				if input[i - 1] == '|':
+					concat_node = Node('+')
+					concat_node.children = [new_node]
+					current_node.children.append(concat_node)
+				else:
+					current_node.children[len(current_node.children) - 1].children.append(new_node)
 			else:
-				current_node = new_node
+				concat_node = Node('+')
+				concat_node.children = [current_node]
+				concat_node.children.append(new_node)
+				current_node = concat_node
+
+			if i < len(input) - 1 and input[ind + 1] == '*':
+				i = ind + 1
+			else:
+				i = ind
+
 		elif input[i] == ')':
-			return current_node, i + 1
+			return current_node, i
+
 		elif input[i] == '|':
-			if current_node != None:
-				new_node = Node('|')
-				new_node.children = [current_node]
-				current_node = new_node
-			else:
-				current_node = Node('|')
+			new_node = Node('|')
+			new_node.children = [current_node]
+			current_node = new_node
+
 		elif input[i] == '*':
 			if current_node != None:
 				new_node = Node('*')
-				if input[i - 1] == ')':
-					new_node.children = [current_node]
-					current_node = new_node
-				else:
-					new_node.children = [current_node.children[len(current_node.children) - 1]]
-					current_node.children[len(current_node.children) - 1] = new_node
+				new_node.children = [current_node.children[len(current_node.children) - 1]]
+				current_node.children[len(current_node.children) - 1] = new_node
+
 		else:
 			if current_node == None:
 				current_node = Node(input[i])
-			elif current_node.symbol == '+':
+			elif current_node.symbol == '+' and input[i - 1] != ')':
 				current_node.children.append(Node(input[i]))
-			elif current_node.symbol == '|':
+			elif current_node.symbol == '|' and input[i - 1] != ')':
 				if input[i - 1] == '|':
 					new_node = Node('+')
-					new_node.children.append(Node(input[i]))
+					new_node.children = [Node(input[i])]
 					current_node.children.append(new_node)
 				else:
 					current_node.children[len(current_node.children) - 1].children.append(Node(input[i]))
@@ -140,7 +158,7 @@ def _build_symbol_tree(input):
 				new_node.children.append(Node(input[i]))
 				current_node = new_node
 		i += 1
-	return current_node, len(input)
+	return current_node, len(input) - 1
 
 
 def create_string_NFA(input):
