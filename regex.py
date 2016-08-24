@@ -133,29 +133,30 @@ def _build_symbol_tree(input, start):
 			new_node.children = [current_node]
 			current_node = new_node
 
-		elif input[i] == '*':
-			if current_node != None:
-				new_node = Node('*')
-				new_node.children = [current_node.children[len(current_node.children) - 1]]
-				current_node.children[len(current_node.children) - 1] = new_node
-
 		else:
+			new_node = Node(input[i])
+			if input[i + 1] == '*':
+				kleene_node = Node('*')
+				kleene_node.children = [new_node]
+				new_node = kleene_node
+				i += 1
+
 			if current_node == None:
-				current_node = Node(input[i])
+				current_node = new_node
 			elif current_node.symbol == '+' and input[i - 1] != ')':
-				current_node.children.append(Node(input[i]))
+				current_node.children.append(new_node)
 			elif current_node.symbol == '|' and input[i - 1] != ')':
 				if input[i - 1] == '|':
-					new_node = Node('+')
-					new_node.children = [Node(input[i])]
-					current_node.children.append(new_node)
+					concat_node = Node('+')
+					concat_node.children = [new_node]
+					current_node.children.append(concat_node)
 				else:
-					current_node.children[len(current_node.children) - 1].children.append(Node(input[i]))
+					current_node.children[len(current_node.children) - 1].children.append(new_node)
 			else:
-				new_node = Node('+')
-				new_node.children.append(current_node)
-				new_node.children.append(Node(input[i]))
-				current_node = new_node
+				concat_node = Node('+')
+				concat_node.children.append(current_node)
+				concat_node.children.append(new_node)
+				current_node = concat_node
 		i += 1
 	return current_node, len(input) - 1
 
