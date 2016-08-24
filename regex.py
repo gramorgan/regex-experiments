@@ -99,10 +99,12 @@ def _build_symbol_tree(input, start):
 	while i < len(input):
 		if input[i] == '(':
 			new_node, ind = _build_symbol_tree(input, i + 1)
+
 			if i < len(input) - 1 and input[ind + 1] == '*':
 				kleene_node = Node('*')
 				kleene_node.children = [new_node]
 				new_node = kleene_node
+				ind += 1
 
 			if current_node == None:
 				current_node = new_node
@@ -121,10 +123,7 @@ def _build_symbol_tree(input, start):
 				concat_node.children.append(new_node)
 				current_node = concat_node
 
-			if i < len(input) - 1 and input[ind + 1] == '*':
-				i = ind + 1
-			else:
-				i = ind
+			i = ind
 
 		elif input[i] == ')':
 			return current_node, i
